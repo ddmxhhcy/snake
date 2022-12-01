@@ -1,0 +1,221 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snake</title>
+    <style>
+        /* *{
+            border: 1px red solid;
+        } */
+    </style>
+</head>
+
+<body>
+    <div style="display: inline-block;vertical-align: middle;"><canvas id="canvas"></canvas></div>
+    <div id="score" style="display: inline-block;vertical-align: middle;text-align: center;">0</div>
+    <script>
+        var fen=0;
+        var context = document.getElementById('canvas').getContext('2d');
+        context.lineWidth = 2;
+        var widthNum = 20;
+        var kzb,gzb;
+        if(window.outerWidth>768){
+            kzb=0.7;
+            gzb=0.9;
+        }
+        else{
+            kzb=1;
+            gzb=0.95;
+        }
+        var size = Math.floor(window.outerWidth * kzb / widthNum) - context.lineWidth - 1;
+        var heightNum = Math.floor(window.outerHeight * gzb / size);
+        canvas.width = size * widthNum;
+        canvas.height = size * heightNum;
+        var score=document.getElementById('score');
+        if(window.outerWidth>768){
+            score.style.height=canvas.height+'px';
+            score.style.lineHeight=canvas.height+'px';
+            score.style.fontSize=canvas.height*0.5+'px'
+        }
+        else{
+            score.style.height=canvas.height+'px';
+            score.style.lineHeight=canvas.height+'px';
+            score.style.fontSize=(window.outerWidth)*0.1+'px';
+        }
+        var keycode = null;
+        var len = 5;
+        var speed = size;
+        var control = [];
+        control[0] = 68;
+
+        function Snake(x, y) {
+            this.x = x;
+            this.y = y;
+            this.color = 'red',
+                this.draw = function () {
+                    context.fillStyle = this.color;
+                    // context.strokeStyle='yellow';
+                    context.fillRect(this.x, this.y, size, size);
+                    context.strokeRect(this.x, this.y, size, size);
+                }
+        };
+
+        function Food() {
+            this.x = Math.floor(Math.random() * widthNum) * size;
+            this.y = Math.floor(Math.random() * heightNum) * size;
+            this.color = 'blue',
+                this.draw = function () {
+                    context.fillStyle = this.color;
+                    context.fillRect(this.x, this.y, size, size);
+                    context.strokeRect(this.x, this.y, size, size);
+                }
+        }
+
+        document.addEventListener('keydown', function (e) {
+            e = e || window.event;
+            keycode = e.keyCode || e.which || e.charCode;
+            if (keycode == 87 || keycode == 68 || keycode == 83 || keycode == 65) {
+                control.push(keycode);
+            }
+        });
+        
+//----------------------------------------------------------------------------
+        var ele = document.getElementById('canvas')
+        var startX = 0;	//获取手指初始坐标
+        var startY = 0 ;
+        var moveX = 0;	//手指移动距离
+        var moveY = 0;
+        ele.addEventListener('touchstart',function(e){
+        	//  获取手指初始坐标
+            startX = e.targetTouches[0].pageX;
+            startY = e.targetTouches[0].pageY;
+        })
+        ele.addEventListener('touchmove',function(e){
+        	//  计算手指的移动距离： 手指移动之后的坐标减去手指初始的坐标
+            moveX = e.targetTouches[0].pageX - startX;
+            moveY = e.targetTouches[0].pageY - startY;
+            //console.log(moveX)
+            e.preventDefault();	// 阻止屏幕滚动的默认行为
+            
+        })
+        ele.addEventListener('touchend',function(e){
+        	
+            
+            // moveX = e.targetTouches[0].pageX - startX;
+            // moveY = e.targetTouches[0].pageY - startY;
+
+            if(Math.abs(moveX)>Math.abs(moveY)){
+                if(moveX>0){
+                    control.push(68);
+                }
+                else{
+                    control.push(65);
+                }
+            }
+            else{
+                if(moveY>0){
+                    control.push(83);
+                }
+                else{
+                    control.push(87);
+                }
+            }
+            
+        })
+//------------------------------------------------------------------------------
+
+        function is(x, y) {
+            for (var i = 0; i < len; i++) {
+                if (snake[i].x == x && snake[i].y == y)
+                    return false;
+            }
+            return true;
+        }
+        function eat() {
+            if (snake[0].x == food.x && snake[0].y == food.y) {
+                do {
+                    food.x = Math.floor(Math.random() * widthNum) * size;
+                    food.y = Math.floor(Math.random() * heightNum) * size;
+                } while (!is(food.x, food.y));
+                snake[len] = new Snake(snake[len - 1].x, snake[len - 1].y);
+                len++;
+                score.innerHTML=++fen;
+            }
+        }
+
+        function die() {
+            for (var i = 1; i < len; i++) {
+                if (snake[0].x == snake[i].x && snake[0].y == snake[i].y) {
+                    clearInterval(interval);
+                    alert('游戏结束');
+                    location.reload();
+                }
+            }
+        }
+
+        function drawGrid() {
+            context.strokeRect(0, 0, canvas.width, canvas.height);
+            context.beginPath();
+            for (var i = size; i < canvas.width; i += size) {
+                context.moveTo(i, 0);
+                context.lineTo(i, canvas.height);
+            }
+            for (var i = size; i < canvas.height; i += size) {
+                context.moveTo(0, i);
+                context.lineTo(canvas.width, i);
+            }
+            context.stroke();
+        }
+
+        function head() {
+            switch (control[0]) {
+                case 87:
+                    snake[0].y = (snake[0].y + canvas.height - speed) % canvas.height;
+                    break;
+                case 68:
+                    snake[0].x = (snake[0].x + speed) % canvas.width;
+                    break;
+                case 83:
+                    snake[0].y = (snake[0].y + speed) % canvas.height;
+                    break;
+                case 65:
+                    snake[0].x = (snake[0].x + canvas.width - speed) % canvas.width;
+            }
+            if (snake[0].x % size == 0 && snake[0].y % size == 0 && control.length > 1) {
+                control.shift();
+            }
+        }
+
+        function body() {
+            for (var i = len - 1; i > 0; i--) {
+                snake[i].x = snake[i - 1].x;
+                snake[i].y = snake[i - 1].y;
+            }
+        }
+
+        function draw() {
+            context.clearRect(0, 0, canvas.width, canvas.height);
+            //drawGrid();
+            context.strokeRect(0, 0, canvas.width, canvas.height);
+            for (var i = 0; i < len; i++) {
+                snake[i].draw();
+            }
+            food.draw();
+        }
+
+        var snake = [];
+        var x = size * (len - 1);
+        for (var i = 0; i < len; i++) {
+            snake[i] = new Snake(x -= size, 0);
+        }
+        var food = new Food();
+
+        var interval = setInterval('body(),head(),eat(),draw(),die()', 200);
+    </script>
+</body>
+
+</html>
